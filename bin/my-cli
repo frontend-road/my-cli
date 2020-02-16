@@ -1,0 +1,85 @@
+#!/usr/bin/env node
+
+const figlet = require('figlet')
+const Printer = require('@darkobits/lolcatjs').default
+const program = require('commander')
+const inquirer = require('inquirer')
+const shell = require('shelljs')
+const ora = require('ora')
+const package = require('../package.json')
+
+const fonts = [
+  '3D Diagonal',
+  '3D-ASCII',
+  'ANSI Shadow',
+  'Dancing Font',
+  'Acrobatic',
+  'Alligator',
+  'Alligator2',
+  'Alpha',
+  'Banner3',
+  'Banner3-D',
+  'Big',
+  'Ghost',
+]
+const font = fonts[Math.floor(Math.random() * fonts.length)]
+console.log('font:', font)
+const text = figlet.textSync('squirrel', font)
+
+const printer = new Printer()
+printer.fromString(text)
+console.log(printer.toString())
+
+const handler = {
+  /**
+   * 命令：my-cli create projectName
+   * cmd: create
+   * env: projectName
+   */
+  create(env) {
+    inquirer.prompt([
+      {
+        type: 'list',
+        name: 'jskind',
+        choices: ['vue', 'react', 'angular'],
+        message: '请选择语言'
+      }
+    ]).then(answers => {
+      console.log(answers)
+      const spinner = ora('正在下载模板...').start()
+
+      // setTimeout(() => {
+      //   spinner.color = 'yellow';
+      //   spinner.text = 'Loading rainbows';
+      // }, 3000);
+
+      if (!shell.which('git')) {
+        shell.echo('Sorry, this script requires git')
+        shell.exit(1)
+      }
+    
+      if (shell.exec(`git clone https://github.com/stupidsongshu/blog.git ${env}`).code !== 0) {
+        shell.echo(Printer.fromString('Error: Git clone template failed'))
+        shell.exit(1)
+      } else {
+        spinner.stop()
+        shell.echo(Printer.fromString('SUCCESS: Download template complete'))
+        // shell.exec(`sed -i '' -e 's/my-cli/updated/g' ./package.json`) // 将package.json文件的内容'my-cli'全部替换为'updated'
+      }
+    })
+  }
+}
+
+program
+  .version(package.version)
+  .arguments('<cmd> [env]')
+  .action((cmd, env) => {
+    console.log('cmd:', cmd)
+    console.log('env:', env)
+    if (handler[cmd]) {
+      handler[cmd](env)
+    } else {
+      console.log(Printer.fromString(`Sorry, command ${cmd} is not support`))
+    }
+  })
+  .parse(process.argv)
